@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT.Москва — Голосование за обед</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍽️</text></svg>">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Шапка -->
+  <header class="header">
+    <div class="container header__inner">
+      <a href="/" class="header__logo">
+        <span class="header__logo-icon">🎓</span>
+        <span class="header__logo-text">IT.Москва</span>
+      </a>
+      <nav class="header__nav" id="mainNav">
+        <button class="header__nav-btn" data-view="voting" id="navVoting">Голосование</button>
+        <button class="header__nav-btn" data-view="results" id="navResults">Результаты</button>
+        <button class="header__nav-btn" data-view="history" id="navHistory">История</button>
+        <button class="header__nav-btn header__nav-btn--logout" id="logoutBtn" style="display:none">Выйти</button>
+      </nav>
+      <button class="header__burger" id="burgerBtn" aria-label="Меню">☰</button>
+    </div>
+  </header>
+
+  <!-- Основной контент -->
+  <main class="main">
+    <div class="container" id="app">
+      <!-- Секция авторизации (регистрация / вход) -->
+      <section class="view" id="viewAuth">
+        <div class="auth-card">
+          <div class="auth-card__header">
+            <div class="auth-card__icon">🎓</div>
+            <h1>IT.Москва</h1>
+            <p class="auth-card__subtitle">Голосование за обед</p>
+          </div>
+
+          <!-- Табы: Вход / Регистрация -->
+          <div class="auth-tabs">
+            <button class="auth-tabs__btn auth-tabs__btn--active" data-tab="login">Вход</button>
+            <button class="auth-tabs__btn" data-tab="register">Регистрация</button>
+          </div>
+
+          <!-- Форма входа -->
+          <form class="auth-form auth-form--active" id="loginForm">
+            <div class="form-group">
+              <label for="loginName">ФИО</label>
+              <input type="text" id="loginName" name="full_name"
+                     placeholder="Иванов Иван Иванович" required autocomplete="name">
+              <span class="form-hint">Только кириллица, минимум 2 слова</span>
+            </div>
+            <div class="form-group">
+              <label for="loginGroup">Группа</label>
+              <input type="text" id="loginGroup" name="group_name"
+                     placeholder="ИС-21" required autocomplete="organization">
+              <span class="form-hint">Например: ИС-21, ПО-31</span>
+            </div>
+            <button type="submit" class="btn btn--primary btn--full">Войти</button>
+            <p class="auth-form__error" id="loginError"></p>
+          </form>
+
+          <!-- Форма регистрации -->
+          <form class="auth-form" id="registerForm">
+            <div class="form-group">
+              <label for="regName">ФИО</label>
+              <input type="text" id="regName" name="full_name"
+                     placeholder="Иванов Иван Иванович" required autocomplete="name">
+              <span class="form-hint">Только кириллица, минимум 2 слова</span>
+            </div>
+            <div class="form-group">
+              <label for="regGroup">Группа</label>
+              <input type="text" id="regGroup" name="group_name"
+                     placeholder="ИС-21" required autocomplete="organization">
+              <span class="form-hint">Например: ИС-21, ПО-31</span>
+            </div>
+            <button type="submit" class="btn btn--primary btn--full">Зарегистрироваться</button>
+            <p class="auth-form__error" id="registerError"></p>
+          </form>
+        </div>
+      </section>
+
+      <!-- Секция голосования -->
+      <section class="view" id="viewVoting" style="display:none">
+        <div class="voting-header">
+          <h2>Голосование за обед</h2>
+          <p class="voting-date" id="votingDate"></p>
+          <div class="voting-timer" id="votingTimer">
+            <span class="voting-timer__label">Голосование откроется через:</span>
+            <span class="voting-timer__value" id="timerValue">--:--:--</span>
+          </div>
+          <p class="voting-closed-msg" id="votingClosedMsg" style="display:none">Голосование закрыто</p>
+        </div>
+
+        <!-- Сообщение после голосования -->
+        <div class="vote-success" id="voteSuccess" style="display:none">
+          <div class="vote-success__icon">✅</div>
+          <h3>Спасибо, ваш голос учтён!</h3>
+          <p id="voteSuccessChoice"></p>
+        </div>
+
+        <!-- Форма голосования -->
+        <div id="votingForm">
+          <section class="menu-section">
+            <h3 class="menu-section__title">🍽️ Выберите блюдо</h3>
+            <div class="menu-grid" id="dishesGrid"></div>
+          </section>
+
+          <section class="menu-section">
+            <h3 class="menu-section__title">🥤 Выберите напиток</h3>
+            <div class="menu-grid" id="drinksGrid"></div>
+          </section>
+
+          <button class="btn btn--primary btn--large btn--full" id="submitVoteBtn" disabled>
+            Проголосовать
+          </button>
+          <p class="auth-form__error" id="voteError"></p>
+        </div>
+
+        <!-- Результаты после голосования / после закрытия -->
+        <div class="results" id="votingResults" style="display:none">
+          <h3>Текущие результаты</h3>
+          <div id="resultsContent"></div>
+        </div>
+      </section>
+
+      <!-- Секция результатов -->
+      <section class="view" id="viewResults" style="display:none">
+        <h2>Результаты голосования</h2>
+        <div id="resultsPage"></div>
+      </section>
+
+      <!-- Секция истории -->
+      <section class="view" id="viewHistory" style="display:none">
+        <h2>История голосований</h2>
+        <div class="history-list" id="historyList"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Футер -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <p>🍽️ IT.Москва — Голосование за обед &copy; <span id="footerYear"></span></p>
+    </div>
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

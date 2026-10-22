@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ-панель — IT.Москва</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚙️</text></svg>">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+    .admin-sidebar {
+      width: 240px;
+      background: var(--color-white);
+      border-right: 1px solid var(--color-border);
+      padding: 20px 0;
+      flex-shrink: 0;
+    }
+    .admin-sidebar__title {
+      padding: 0 20px 16px;
+      font-weight: 700;
+      font-size: 1rem;
+      border-bottom: 1px solid var(--color-border);
+      margin-bottom: 8px;
+    }
+    .admin-sidebar__link {
+      display: block;
+      padding: 10px 20px;
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all var(--transition);
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+    .admin-sidebar__link:hover, .admin-sidebar__link--active {
+      color: var(--color-primary);
+      background: var(--color-primary-bg);
+    }
+    .admin-sidebar__link--danger {
+      color: var(--color-error);
+    }
+    .admin-sidebar__link--danger:hover {
+      background: #fef2f2;
+      color: var(--color-error);
+    }
+    .admin-main {
+      flex: 1;
+      padding: 24px 32px;
+      background: var(--color-bg);
+      overflow-y: auto;
+    }
+    .admin-section {
+      display: none;
+    }
+    .admin-section--active {
+      display: block;
+    }
+    .admin-section h2 {
+      margin-bottom: 20px;
+      font-size: 1.375rem;
+    }
+    .admin-card {
+      background: var(--color-white);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      box-shadow: 0 2px 8px var(--color-card-shadow);
+      margin-bottom: 20px;
+    }
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .admin-table th {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--color-border);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .admin-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .admin-table tr:hover td {
+      background: var(--color-bg);
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge--success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .badge--warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .admin-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .admin-date-input {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .admin-date-input input[type="date"] {
+      padding: 8px 12px;
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--color-white);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 8px var(--color-card-shadow);
+    }
+    .stat-card__value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+    .stat-card__label {
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+      margin-top: 4px;
+    }
+    .admin-form-inline {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .admin-form-inline .form-group {
+      margin-bottom: 0;
+    }
+    .settings-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .menu-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .menu-item-row:last-child {
+      border-bottom: none;
+    }
+    .menu-item-row__info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .menu-item-row__emoji {
+      font-size: 1.5rem;
+    }
+    .menu-item-row__actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+    @media (max-width: 768px) {
+      .admin-layout {
+        flex-direction: column;
+      }
+      .admin-sidebar {
+        width: 100%;
+        display: flex;
+        overflow-x: auto;
+        padding: 0;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+      }
+      .admin-sidebar__title {
+        display: none;
+      }
+      .admin-sidebar__link {
+        white-space: nowrap;
+        padding: 12px 16px;
+        border-bottom: 2px solid transparent;
+      }
+      .admin-sidebar__link--active {
+        border-bottom-color: var(--color-primary);
+      }
+      .admin-main {
+        padding: 16px;
+      }
+      .admin-table {
+        font-size: 0.8rem;
+      }
+      .admin-table th, .admin-table td {
+        padding: 8px 6px;
+      }
+      .settings-group {
+        grid-template-columns: 1fr;
+      }
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .modal {
+      background: var(--color-white);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+    }
+    .modal h3 {
+      margin-bottom: 12px;
+    }
+    .modal__actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      justify-content: flex-end;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <!-- Сайдбар -->
+    <nav class="admin-sidebar">
+      <div class="admin-sidebar__title">⚙️ Админ-панель</div>
+      <button class="admin-sidebar__link admin-sidebar__link--active" data-section="dashboard">📊 Дашборд</button>
+      <button class="admin-sidebar__link" data-section="results">📋 Результаты</button>
+      <button class="admin-sidebar__link" data-section="students">👥 Студенты</button>
+      <button class="admin-sidebar__link" data-section="menu">🍽️ Меню</button>
+      <button class="admin-sidebar__link" data-section="settings">⚙️ Настройки</button>
+      <button class="admin-sidebar__link admin-sidebar__link--danger" id="adminLogoutBtn">🚪 Выйти</button>
+    </nav>
+
+    <!-- Контент -->
+    <main class="admin-main">
+
+      <!-- Дашборд -->
+      <section class="admin-section admin-section--active" id="sectionDashboard">
+        <h2>📊 Дашборд</h2>
+        <div class="admin-stats" id="dashboardStats"></div>
+        <div class="admin-card" id="dashboardToday"></div>
+      </section>
+
+      <!-- Результаты -->
+      <section class="admin-section" id="sectionResults">
+        <h2>📋 Результаты голосования</h2>
+        <div class="admin-card">
+          <div class="admin-date-input">
+            <label for="resultsDate">Дата:</label>
+            <input type="date" id="resultsDate">
+            <button class="btn btn--primary btn-sm" id="loadResultsBtn">Загрузить</button>
+            <button class="btn btn--outline btn-sm" id="exportCsvBtn">📥 CSV</button>
+          </div>
+        </div>
+        <div id="resultsContent"></div>
+      </section>
+
+      <!-- Студенты -->
+      <section class="admin-section" id="sectionStudents">
+        <h2>👥 Студенты</h2>
+        <div class="admin-card" id="studentsContent"></div>
+      </section>
+
+      <!-- Меню -->
+      <section class="admin-section" id="sectionMenu">
+        <h2>🍽️ Управление меню</h2>
+
+        <div class="admin-card">
+          <h3 style="margin-bottom:12px;">➕ Добавить блюдо</h3>
+          <form class="admin-form-inline" id="addDishForm">
+            <div class="form-group">
+              <label for="newDishName">Название</label>
+              <input type="text" id="newDishName" placeholder="Новое блюдо" required>
+            </div>
+            <div class="form-group">
+              <label for="newDishEmoji">Эмодзи</label>
+              <input type="text" id="newDishEmoji" placeholder="🍔" style="width:70px">
+            </div>
+            <button type="submit" class="btn btn--primary btn-sm">Добавить</button>
+          </form>
+        </div>
+
+        <div class="admin-card">
+          <h3 style="margin-bottom:12px;">➕ Добавить напиток</h3>
+          <form class="admin-form-inline" id="addDrinkForm">
+            <div class="form-group">
+              <label for="newDrinkName">Название</label>
+              <input type="text" id="newDrinkName" placeholder="Новый напиток" required>
+            </div>
+            <div class="form-group">
+              <label for="newDrinkEmoji">Эмодзи</label>
+              <input type="text" id="newDrinkEmoji" placeholder="🥤" style="width:70px">
+            </div>
+            <button type="submit" class="btn btn--primary btn-sm">Добавить</button>
+          </form>
+        </div>
+
+        <div class="admin-card">
+          <h3 style="margin-bottom:12px;">📋 Текущее меню</h3>
+          <div id="menuList"></div>
+        </div>
+      </section>
+
+      <!-- Настройки -->
+      <section class="admin-section" id="sectionSettings">
+        <h2>⚙️ Настройки голосования</h2>
+        <div class="admin-card">
+          <div class="settings-group">
+            <div class="form-group">
+              <label for="votingStart">Время открытия</label>
+              <input type="time" id="votingStart">
+            </div>
+            <div class="form-group">
+              <label for="votingEnd">Время закрытия</label>
+              <input type="time" id="votingEnd">
+            </div>
+          </div>
+          <button class="btn btn--primary" id="saveSettingsBtn" style="margin-top:12px;">Сохранить настройки</button>
+          <p class="auth-form__error" id="settingsError"></p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // ========== Состояние ==========
+    let menuData = { dishes: [], drinks: [] };
+    let currentDate = new Date().toISOString().split('T')[0];
+
+    // ========== Проверка авторизации ==========
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/admin/check');
+        const data = await res.json();
+        if (!data.isAdmin) {
+          window.location.href = '/admin/login';
+        }
+      } catch {
+        window.location.href = '/admin/login';
+      }
+    }
+
+    // ========== API ==========
+    async function api(url, method = 'GET', body = null) {
+      const options = { method, headers: { 'Content-Type': 'application/json' } };
+      if (body) options.body = JSON.stringify(body);
+      const res = await fetch(url, options);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Ошибка');
+      return data;
+    }
+
+    // ========== Навигация по секциям ==========
+    function switchSection(sectionName) {
+      document.querySelectorAll('.admin-sidebar__link').forEach(l => l.classList.remove('admin-sidebar__link--active'));
+      document.querySelector(`.admin-sidebar__link[data-section="${sectionName}"]`).classList.add('admin-sidebar__link--active');
+      document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('admin-section--active'));
+      document.getElementById('section' + sectionName.charAt(0).toUpperCase() + sectionName.slice(1)).classList.add('admin-section--active');
+    }
+
+    document.querySelectorAll('.admin-sidebar__link[data-section]').forEach(link => {
+      link.addEventListener('click', () => {
+        const section = link.dataset.section;
+        switchSection(section);
+        if (section === 'dashboard') loadDashboard();
+        if (section === 'students') loadStudents();
+        if (section === 'menu') loadMenu();
+        if (section === 'settings') loadSettings();
+        if (section === 'results') loadResults();
+      });
+    });
+
+    // ========== Дашборд ==========
+    async function loadDashboard() {
+      try {
+        const results = await api('/api/vote/results');
+        const students = await api('/api/admin/students');
+        const total = students.students.length;
+        const votedToday = results.totalVotes;
+
+        document.getElementById('dashboardStats').innerHTML = `
+          <div class="stat-card">
+            <div class="stat-card__value">${total}</div>
+            <div class="stat-card__label">Всего студентов</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value">${votedToday}</div>
+            <div class="stat-card__label">Проголосовало сегодня</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value">${total > 0 ? Math.round(votedToday / total * 100) : 0}%</div>
+            <div class="stat-card__label">Явка</div>
+          </div>
+        `;
+
+        if (results.winner) {
+          document.getElementById('dashboardToday').innerHTML = `
+            <h3>🥇 Победитель сегодня</h3>
+            <p style="font-size:1.25rem;font-weight:600;margin-top:8px;color:var(--color-primary-dark);">
+              ${results.winner.dish} + ${results.winner.drink}
+            </p>
+            <p style="color:var(--color-text-secondary);font-size:0.85rem;margin-top:4px;">
+              Всего голосов: ${results.totalVotes}
+            </p>
+          `;
+        } else {
+          document.getElementById('dashboardToday').innerHTML = `
+            <h3>📊 Текущие результаты</h3>
+            <p style="color:var(--color-text-secondary);margin-top:8px;">Голосование ещё не завершено (голосов: ${votedToday})</p>
+          `;
+        }
+      } catch (err) {
+        document.getElementById('dashboardStats').innerHTML = `<p style="color:var(--color-error)">${err.message}</p>`;
+      }
+    }
+
+    // ========== Результаты ==========
+    async function loadResults(date) {
+      currentDate = date || document.getElementById('resultsDate').value || new Date().toISOString().split('T')[0];
+      document.getElementById('resultsDate').value = currentDate;
+
+      try {
+        const data = await api(`/api/admin/results?date=${currentDate}`);
+
+        let html = `
+          <div class="admin-card">
+            <p>Проголосовало: <strong>${data.totalVotes}</strong> из <strong>${data.allStudents.length}</strong></p>
+          </div>
+        `;
+
+        // Таблица голосов
+        if (data.votes.length > 0) {
+          html += `
+            <div class="admin-card">
+              <h3 style="margin-bottom:12px;">Голоса</h3>
+              <div style="overflow-x:auto;">
+                <table class="admin-table">
+                  <thead>
+                    <tr><th>ФИО</th><th>Группа</th><th>Блюдо</th><th>Напиток</th><th>Время</th></tr>
+                  </thead>
+                  <tbody>
+                    ${data.votes.map(v => `
+                      <tr>
+                        <td>${v.full_name}</td>
+                        <td>${v.group_name}</td>
+                        <td>${v.dish}</td>
+                        <td>${v.drink}</td>
+                        <td>${v.created_at || '—'}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+
+        // Список студентов (кто проголосовал/не проголосовал)
+        html += `
+          <div class="admin-card">
+            <h3 style="margin-bottom:12px;">Студенты</h3>
+            <div style="overflow-x:auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr><th>ФИО</th><th>Группа</th><th>Статус</th></tr>
+                </thead>
+                <tbody>
+                  ${data.allStudents.map(s => `
+                    <tr>
+                      <td>${s.full_name}</td>
+                      <td>${s.group_name}</td>
+                      <td>
+                        <span class="badge ${s.has_voted ? 'badge--success' : 'badge--warning'}">
+                          ${s.has_voted ? '✅ Проголосовал' : '⏳ Не голосовал'}
+                        </span>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('resultsContent').innerHTML = html;
+      } catch (err) {
+        document.getElementById('resultsContent').innerHTML = `<p style="color:var(--color-error)">${err.message}</p>`;
+      }
+    }
+
+    document.getElementById('loadResultsBtn').addEventListener('click', () => loadResults());
+    document.getElementById('resultsDate').value = currentDate;
+
+    document.getElementById('exportCsvBtn').addEventListener('click', () => {
+      window.open(`/api/admin/results/export?date=${currentDate}`, '_blank');
+    });
+
+    // ========== Студенты ==========
+    async function loadStudents() {
+      try {
+        const data = await api('/api/admin/students');
+        let html = `
+          <p style="margin-bottom:12px;">Всего студентов: <strong>${data.students.length}</strong></p>
+          <div style="overflow-x:auto;">
+            <table class="admin-table">
+              <thead>
+                <tr><th>ФИО</th><th>Группа</th><th>Зарегистрирован</th><th>Действия</th></tr>
+              </thead>
+              <tbody>
+                ${data.students.map(s => `
+                  <tr>
+                    <td>${s.full_name}</td>
+                    <td>${s.group_name}</td>
+                    <td>${s.created_at || '—'}</td>
+                    <td>
+                      <button class="btn btn--danger btn-sm" onclick="deleteStudent(${s.id}, '${s.full_name}')">Удалить</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+        document.getElementById('studentsContent').innerHTML = html;
+      } catch (err) {
+        document.getElementById('studentsContent').innerHTML = `<p style="color:var(--color-error)">${err.message}</p>`;
+      }
+    }
+
+    async function deleteStudent(id, name) {
+      if (!confirm(`Удалить студента "${name}" и все его голоса?`)) return;
+      try {
+        await api(`/api/admin/students/${id}`, 'DELETE');
+        loadStudents();
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
+      }
+    }
+
+    // ========== Меню ==========
+    async function loadMenu() {
+      try {
+        const data = await api('/api/admin/menu');
+        menuData = data;
+
+        let html = '<h4 style="margin-bottom:8px;">🍽️ Блюда</h4>';
+        data.dishes.forEach(d => {
+          html += `
+            <div class="menu-item-row">
+              <div class="menu-item-row__info">
+                <span class="menu-item-row__emoji">${d.emoji || '🍽️'}</span>
+                <span>${d.name}</span>
+                <span class="badge ${d.is_active ? 'badge--success' : 'badge--warning'}">
+                  ${d.is_active ? 'Активно' : 'Скрыто'}
+                </span>
+              </div>
+              <div class="menu-item-row__actions">
+                <button class="btn btn-sm ${d.is_active ? 'btn--outline' : 'btn--primary'}"
+                  onclick="toggleMenuItem(${d.id}, ${d.is_active})">
+                  ${d.is_active ? 'Скрыть' : 'Показать'}
+                </button>
+                <button class="btn btn--danger btn-sm" onclick="deleteMenuItem(${d.id}, '${d.name}')">✕</button>
+              </div>
+            </div>
+          `;
+        });
+
+        html += '<h4 style="margin:16px 0 8px;">🥤 Напитки</h4>';
+        data.drinks.forEach(d => {
+          html += `
+            <div class="menu-item-row">
+              <div class="menu-item-row__info">
+                <span class="menu-item-row__emoji">${d.emoji || '🥤'}</span>
+                <span>${d.name}</span>
+                <span class="badge ${d.is_active ? 'badge--success' : 'badge--warning'}">
+                  ${d.is_active ? 'Активно' : 'Скрыто'}
+                </span>
+              </div>
+              <div class="menu-item-row__actions">
+                <button class="btn btn-sm ${d.is_active ? 'btn--outline' : 'btn--primary'}"
+                  onclick="toggleMenuItem(${d.id}, ${d.is_active})">
+                  ${d.is_active ? 'Скрыть' : 'Показать'}
+                </button>
+                <button class="btn btn--danger btn-sm" onclick="deleteMenuItem(${d.id}, '${d.name}')">✕</button>
+              </div>
+            </div>
+          `;
+        });
+
+        document.getElementById('menuList').innerHTML = html;
+      } catch (err) {
+        document.getElementById('menuList').innerHTML = `<p style="color:var(--color-error)">${err.message}</p>`;
+      }
+    }
+
+    async function toggleMenuItem(id, isActive) {
+      try {
+        await api(`/api/admin/menu/${id}`, 'PUT', { is_active: !isActive });
+        loadMenu();
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
+      }
+    }
+
+    async function deleteMenuItem(id, name) {
+      if (!confirm(`Удалить "${name}"?`)) return;
+      try {
+        await api(`/api/admin/menu/${id}`, 'DELETE');
+        loadMenu();
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
+      }
+    }
+
+    document.getElementById('addDishForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('newDishName').value.trim();
+      const emoji = document.getElementById('newDishEmoji').value.trim();
+      if (!name) return;
+      try {
+        await api('/api/admin/menu', 'POST', { name, type: 'dish', emoji });
+        document.getElementById('newDishName').value = '';
+        document.getElementById('newDishEmoji').value = '';
+        loadMenu();
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
+      }
+    });
+
+    document.getElementById('addDrinkForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('newDrinkName').value.trim();
+      const emoji = document.getElementById('newDrinkEmoji').value.trim();
+      if (!name) return;
+      try {
+        await api('/api/admin/menu', 'POST', { name, type: 'drink', emoji });
+        document.getElementById('newDrinkName').value = '';
+        document.getElementById('newDrinkEmoji').value = '';
+        loadMenu();
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
+      }
+    });
+
+    // ========== Настройки ==========
+    async function loadSettings() {
+      try {
+        const data = await api('/api/admin/settings');
+        document.getElementById('votingStart').value = data.settings.voting_start || '18:00';
+        document.getElementById('votingEnd').value = data.settings.voting_end || '23:59';
+      } catch (err) {
+        document.getElementById('settingsError').textContent = 'Ошибка загрузки настроек';
+      }
+    }
+
+    document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
+      const voting_start = document.getElementById('votingStart').value;
+      const voting_end = document.getElementById('votingEnd').value;
+      try {
+        await api('/api/admin/settings', 'PUT', { voting_start, voting_end });
+        document.getElementById('settingsError').textContent = '✅ Настройки сохранены';
+        document.getElementById('settingsError').style.color = 'var(--color-success)';
+        setTimeout(() => {
+          document.getElementById('settingsError').textContent = '';
+          document.getElementById('settingsError').style.color = '';
+        }, 3000);
+      } catch (err) {
+        document.getElementById('settingsError').textContent = err.message;
+      }
+    });
+
+    // ========== Выход ==========
+    document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
+      try {
+        await api('/api/admin/logout', 'POST');
+      } catch {}
+      window.location.href = '/admin/login';
+    });
+
+    // ========== Инициализация ==========
+    checkAuth().then(() => {
+      loadDashboard();
+      loadResults();
+    });
+  </script>
+</body>
+</html>
