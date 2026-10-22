@@ -172,7 +172,7 @@ DOM.registerForm.addEventListener('submit', async (e) => {
 
   // Валидация на клиенте
   const nameRegex = /^[А-ЯЁ][а-яё]+[-]?[а-яё]*\s[А-ЯЁ][а-яё]+(\s[А-ЯЁ][а-яё]+)?$/;
-  const groupRegex = /^[А-ЯЁ]{2,4}-\d{2}$/;
+  const groupRegex = /^(\d[А-ЯЁ]{2,4}-\d(-\d{1,2})?|[А-ЯЁ]{2,4}-\d{2})$/;
 
   if (!nameRegex.test(full_name)) {
     showError(DOM.registerError, 'ФИО должно содержать минимум 2 слова кириллицей');
@@ -180,7 +180,7 @@ DOM.registerForm.addEventListener('submit', async (e) => {
   }
 
   if (!groupRegex.test(group_name.toUpperCase())) {
-    showError(DOM.registerError, 'Группа должна быть в формате: буквы-цифры (например: ИС-21)');
+    showError(DOM.registerError, 'Группа должна быть в формате: 1ИИ-4-26 или ИС-21');
     return;
   }
 

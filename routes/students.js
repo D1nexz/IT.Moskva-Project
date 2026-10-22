@@ -10,8 +10,8 @@ const { checkVotingTime } = require('../middleware/votingTime');
 // Кириллица, пробелы, дефисы, минимум 2 слова
 const FULL_NAME_REGEX = /^[А-ЯЁ][а-яё]+[-]?[а-яё]*\s[А-ЯЁ][а-яё]+(\s[А-ЯЁ][а-яё]+)?$/;
 
-// Формат группы: буквы-цифры, например ИС-21, ПО-31
-const GROUP_REGEX = /^[А-ЯЁ]{2,4}-\d{2}$/;
+// Формат группы: например 1ИИ-4-26, 2ПО-3-25, ИС-21
+const GROUP_REGEX = /^(\d[А-ЯЁ]{2,4}-\d(-\d{1,2})?|[А-ЯЁ]{2,4}-\d{2})$/;
 
 /**
  * POST /api/students/register — регистрация нового студента
@@ -36,7 +36,7 @@ router.post('/register', async (req, res) => {
 
     if (!GROUP_REGEX.test(trimmedGroup)) {
       return res.status(400).json({
-        error: 'Группа должна быть в формате: буквы-цифры (например: ИС-21, ПО-31)'
+        error: 'Группа должна быть в формате: 1ИИ-4-26 или ИС-21'
       });
     }
 
