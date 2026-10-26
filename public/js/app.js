@@ -12,12 +12,23 @@ const state = {
   selectedDrink: null,
   votingOpen: false,
   alreadyVoted: false,
-  votingTimer: null
+  votingTimer: null,
+  votingTimeStartMinutes: null // минуты начала голосования из настроек, для countdown
 };
 
 // ========== DOM-ссылки ==========
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
+
+/** Экранирует HTML-спецсимволы (защита от XSS при вставке в innerHTML) */
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '\x26amp;')
+    .replace(/</g, '\x26lt;')
+    .replace(/>/g, '\x26gt;')
+    .replace(/"/g, '\x26quot;')
+    .replace(/'/g, '\x26#39;');
+}
 
 const DOM = {
   // Навигация
@@ -609,17 +620,17 @@ async function initVoting() {
 function renderMenu() {
   // Блюда
   DOM.dishesGrid.innerHTML = state.menu.dishes.map(d => `
-    <div class="menu-card" data-type="dish" data-name="${d.name}" data-id="${d.id}" role="button" tabindex="0" aria-label="${d.name}">
-      <span class="menu-card__emoji">${d.emoji || '🍽️'}</span>
-      <span class="menu-card__name">${d.name}</span>
+    <div class="menu-card" data-type="dish" data-name="${escapeHtml(d.name)}" data-id="${d.id}" role="button" tabindex="0" aria-label="${escapeHtml(d.name)}">
+      <span class="menu-card__emoji">${escapeHtml(d.emoji) || '🍽️'}</span>
+      <span class="menu-card__name">${escapeHtml(d.name)}</span>
     </div>
   `).join('');
 
   // Напитки
   DOM.drinksGrid.innerHTML = state.menu.drinks.map(d => `
-    <div class="menu-card" data-type="drink" data-name="${d.name}" data-id="${d.id}" role="button" tabindex="0" aria-label="${d.name}">
-      <span class="menu-card__emoji">${d.emoji || '🥤'}</span>
-      <span class="menu-card__name">${d.name}</span>
+    <div class="menu-card" data-type="drink" data-name="${escapeHtml(d.name)}" data-id="${d.id}" role="button" tabindex="0" aria-label="${escapeHtml(d.name)}">
+      <span class="menu-card__emoji">${escapeHtml(d.emoji) || '🥤'}</span>
+      <span class="menu-card__name">${escapeHtml(d.name)}</span>
     </div>
   `).join('');
 
@@ -663,6 +674,10 @@ async function loadVotingStatus() {
 
     state.votingOpen = status.votingOpen;
     state.alreadyVoted = status.alreadyVoted;
+    // Сохраняем актуальные настройки времени для корректного обратного отсчёта
+    if (status.votingTime && status.votingTime.startMinutes != null) {
+      state.votingTimeStartMinutes = status.votingTime.startMinutes;
+    }
 
     // Обновляем таймер
     updateTimerUI(status.votingTime);
@@ -743,9 +758,10 @@ function startCountdown(targetMinutes) {
     if (targetMinutes !== null) {
       remaining = targetMinutes - currentMinutes;
     } else {
-      const startSetting = { value: '18:00' }; // fallback
-      const [h, m] = startSetting.value.split(':').map(Number);
-      const startMin = h * 60 + m;
+      // Используем актуальное время открытия из настроек (получаем их через /api/vote/status)
+      const startMin = (state.votingTimeStartMinutes != null)
+        ? state.votingTimeStartMinutes
+        : (18 * 60); // резервный fallback
       remaining = (24 * 60 - currentMinutes) + startMin;
     }
 
@@ -849,7 +865,7 @@ function renderResults(container, data, compact) {
     html += `
       <div class="results-winner">
         <p class="results-winner__label">Завтра на обед</p>
-        <p class="results-winner__text">${data.winner.dish} + ${data.winner.drink}</p>
+        <p class="results-winner__text">${escapeHtml(data.winner.dish)} + ${escapeHtml(data.winner.drink)}</p>
       </div>
     `;
   }
@@ -860,7 +876,7 @@ function renderResults(container, data, compact) {
     const pct = d.percent;
     html += `
       <div class="result-bar">
-        <span class="result-bar__label">${d.name}</span>
+        <span class="result-bar__label">${escapeHtml(d.name)}</span>
         <div class="result-bar__track">
           <div class="result-bar__fill" style="width: ${pct}%"></div>
         </div>
@@ -876,7 +892,7 @@ function renderResults(container, data, compact) {
     const pct = d.percent;
     html += `
       <div class="result-bar">
-        <span class="result-bar__label">${d.name}</span>
+        <span class="result-bar__label">${escapeHtml(d.name)}</span>
         <div class="result-bar__track">
           <div class="result-bar__fill" style="width: ${pct}%"></div>
         </div>
@@ -937,7 +953,7 @@ function renderHistory(history) {
     <div class="history-card">
       <span class="history-card__date">${formatDateDisplay(h.date)}</span>
       <span class="history-card__winner">
-        🍽️ ${h.winnerDish || '—'} + 🥤 ${h.winnerDrink || '—'}
+        🍽️ ${escapeHtml(h.winnerDish) || '—'} + 🥤 ${escapeHtml(h.winnerDrink) || '—'}
       </span>
     </div>
   `).join('');

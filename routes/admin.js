@@ -6,8 +6,18 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
+const rateLimit = require('express-rate-limit');
 const { dbRun, dbGet, dbQuery } = require('../src/utils/dbHelpers');
 const { requireAdmin } = require('../middleware/auth');
+
+// Ограничение попыток входа (защита от перебора пароля)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 20,
+  message: { error: 'Слишком много попыток входа, попробуйте позже' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 /**
  * GET /api/admin/check — проверка сессии администратора
@@ -19,7 +29,7 @@ router.get('/check', (req, res) => {
 /**
  * POST /api/admin/login — вход администратора
  */
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -61,11 +71,20 @@ router.post('/logout', (req, res) => {
 });
 
 /**
+ * Мини-хелпер: сегодняшняя дата в МСК (ISO YYYY-MM-DD)
+ */
+function mskToday() {
+  const now = new Date();
+  const msk = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  return msk.toISOString().split('T')[0];
+}
+
+/**
  * GET /api/admin/results — результаты за указанную дату
  */
 router.get('/results', requireAdmin, async (req, res) => {
   try {
-    const date = req.query.date || new Date().toISOString().split('T')[0];
+    const date = req.query.date || mskToday();
 
     const votes = await dbQuery(
       `SELECT v.*, s.full_name, s.group_name
@@ -107,7 +126,7 @@ router.get('/results', requireAdmin, async (req, res) => {
  */
 router.get('/results/export', requireAdmin, async (req, res) => {
   try {
-    const date = req.query.date || new Date().toISOString().split('T')[0];
+    const date = req.query.date || mskToday();
 
     const votes = await dbQuery(
       `SELECT v.vote_date, s.full_name, s.group_name, v.dish, v.drink, v.created_at
@@ -299,21 +318,32 @@ router.get('/settings', requireAdmin, async (req, res) => {
 });
 
 /**
+ * Валидация времени в формате ЧЧ:ММ (00:00–23:59)
+ */
+function isValidTime(str) {
+  if (typeof str !== 'string' || !/^\d{2}:\d{2}$/.test(str)) return false;
+  const [h, m] = str.split(':').map(Number);
+  return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+}
+
+/**
  * PUT /api/admin/settings — обновление настроек
  */
 router.put('/settings', requireAdmin, async (req, res) => {
   try {
     const { voting_start, voting_end } = req.body;
 
-    if (voting_start) {
-      const validTime = /^\d{2}:\d{2}$/.test(voting_start);
-      if (!validTime) return res.status(400).json({ error: 'Неверный формат времени' });
+    if (voting_start !== undefined && voting_start !== null && voting_start !== '') {
+      if (!isValidTime(voting_start)) {
+        return res.status(400).json({ error: 'Время должно быть в формате ЧЧ:ММ (00:00–23:59)' });
+      }
       await dbRun('UPDATE settings SET value = ? WHERE key = ?', [voting_start, 'voting_start']);
     }
 
-    if (voting_end) {
-      const validTime = /^\d{2}:\d{2}$/.test(voting_end);
-      if (!validTime) return res.status(400).json({ error: 'Неверный формат времени' });
+    if (voting_end !== undefined && voting_end !== null && voting_end !== '') {
+      if (!isValidTime(voting_end)) {
+        return res.status(400).json({ error: 'Время должно быть в формате ЧЧ:ММ (00:00–23:59)' });
+      }
       await dbRun('UPDATE settings SET value = ? WHERE key = ?', [voting_end, 'voting_end']);
     }
 

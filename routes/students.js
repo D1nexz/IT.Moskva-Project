@@ -4,8 +4,18 @@
 
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const { dbRun, dbGet, dbQuery } = require('../src/utils/dbHelpers');
 const { checkVotingTime } = require('../middleware/votingTime');
+
+// Ограничение попыток входа/регистрации (защита от перебора и флуда)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 20,
+  message: { error: 'Слишком много попыток входа, попробуйте позже' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // ФИО: фамилия + имя/инициалы (кириллица), например: Иванов Иван, Иванов И.И., Иванов Иван Иванович
 const FULL_NAME_REGEX = /^[А-ЯЁ][а-яё]+(?:\s+(?:[А-ЯЁ][а-яё]+|(?:[А-ЯЁ]\.)+)){1,2}$/;
@@ -16,7 +26,7 @@ const GROUP_REGEX = /^(\d[А-ЯЁ]{2,4}-\d(-\d{1,2})?|[А-ЯЁ]{2,4}-\d{2})$/;
 /**
  * POST /api/students/register — регистрация нового студента
  */
-router.post('/register', async (req, res) => {
+router.post('/register', loginLimiter, async (req, res) => {
   try {
     const { full_name, group_name } = req.body;
 
@@ -81,7 +91,7 @@ router.post('/register', async (req, res) => {
 /**
  * POST /api/students/login — вход по ФИО и группе
  */
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { full_name, group_name } = req.body;
 

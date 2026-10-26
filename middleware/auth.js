@@ -8,8 +8,10 @@ function requireAdmin(req, res, next) {
     return next();
   }
 
-  // Если запрос API — возвращаем JSON
-  if (req.path.startsWith('/api/admin')) {
+  // Если запрос API — возвращаем JSON.
+  // ВАЖНО: req.path внутри смонтированного роутера возвращает путь ОТНОСИТЕЛЬНО
+  // точки монтирования (например, '/results'), поэтому используем req.originalUrl.
+  if (req.originalUrl && req.originalUrl.startsWith('/api/admin')) {
     return res.status(401).json({ error: 'Требуется авторизация администратора' });
   }
 

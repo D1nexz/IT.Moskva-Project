@@ -361,7 +361,42 @@
   <script>
     // ========== Состояние ==========
     let menuData = { dishes: [], drinks: [] };
-    let currentDate = new Date().toISOString().split('T')[0];
+
+    /** Сегодняшняя дата в МСК (ISO YYYY-MM-DD) */
+    function mskToday() {
+      const now = new Date();
+      const msk = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+      return msk.toISOString().split('T')[0];
+    }
+    let currentDate = mskToday();
+
+    // ========== Утилиты ==========
+
+    /** Экранирует HTML-спецсимволы (защита от XSS при вставке в innerHTML) */
+    function escapeHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '\x26amp;')
+        .replace(/</g, '\x26lt;')
+        .replace(/>/g, '\x26gt;')
+        .replace(/"/g, '\x26quot;')
+        .replace(/'/g, '\x26#39;');
+    }
+
+    /**
+     * Экранирует строку для вставки в атрибут onclick (обёрнут в двойные кавычки HTML,
+     * внутри JS-строка в одинарных кавычках).
+     * - `'` → `\'`  (не ломает JS-строку; backslash не трогается HTML-парсером)
+     * - `"` → `"` (не ломает HTML-атрибут; после HTML-декодирования `"` безвредна в JS single-quote строке)
+     * - `&`, `<` экранируются (порядок важен: `&` ДО `"`, чтобы не перекодировать созданные `"`)
+     */
+    function escapeJs(str) {
+      return String(str == null ? '' : str)
+        .replace(/\\/g, '\\\\')
+        .replace(/&/g, '\x26amp;')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\x26quot;')
+        .replace(/</g, '\x26lt;');
+    }
 
     // ========== Проверка авторизации ==========
     async function checkAuth() {
@@ -381,6 +416,13 @@
       const options = { method, headers: { 'Content-Type': 'application/json' } };
       if (body) options.body = JSON.stringify(body);
       const res = await fetch(url, options);
+
+      // Сессия истекла или не авторизован — возвращаем на страницу входа
+      if (res.status === 401) {
+        window.location.href = '/admin/login';
+        throw new Error('Требуется авторизация');
+      }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Ошибка');
       return data;
@@ -433,7 +475,7 @@
           document.getElementById('dashboardToday').innerHTML = `
             <h3>🥇 Победитель сегодня</h3>
             <p style="font-size:1.25rem;font-weight:600;margin-top:8px;color:var(--color-primary-dark);">
-              ${results.winner.dish} + ${results.winner.drink}
+              ${escapeHtml(results.winner.dish)} + ${escapeHtml(results.winner.drink)}
             </p>
             <p style="color:var(--color-text-secondary);font-size:0.85rem;margin-top:4px;">
               Всего голосов: ${results.totalVotes}
@@ -452,7 +494,7 @@
 
     // ========== Результаты ==========
     async function loadResults(date) {
-      currentDate = date || document.getElementById('resultsDate').value || new Date().toISOString().split('T')[0];
+      currentDate = date || document.getElementById('resultsDate').value || mskToday();
       document.getElementById('resultsDate').value = currentDate;
 
       try {
@@ -477,11 +519,11 @@
                   <tbody>
                     ${data.votes.map(v => `
                       <tr>
-                        <td>${v.full_name}</td>
-                        <td>${v.group_name}</td>
-                        <td>${v.dish}</td>
-                        <td>${v.drink}</td>
-                        <td>${v.created_at || '—'}</td>
+                        <td>${escapeHtml(v.full_name)}</td>
+                        <td>${escapeHtml(v.group_name)}</td>
+                        <td>${escapeHtml(v.dish)}</td>
+                        <td>${escapeHtml(v.drink)}</td>
+                        <td>${escapeHtml(v.created_at) || '—'}</td>
                       </tr>
                     `).join('')}
                   </tbody>
@@ -503,8 +545,8 @@
                 <tbody>
                   ${data.allStudents.map(s => `
                     <tr>
-                      <td>${s.full_name}</td>
-                      <td>${s.group_name}</td>
+                      <td>${escapeHtml(s.full_name)}</td>
+                      <td>${escapeHtml(s.group_name)}</td>
                       <td>
                         <span class="badge ${s.has_voted ? 'badge--success' : 'badge--warning'}">
                           ${s.has_voted ? '✅ Проголосовал' : '⏳ Не голосовал'}
@@ -545,11 +587,11 @@
               <tbody>
                 ${data.students.map(s => `
                   <tr>
-                    <td>${s.full_name}</td>
-                    <td>${s.group_name}</td>
-                    <td>${s.created_at || '—'}</td>
+                    <td>${escapeHtml(s.full_name)}</td>
+                    <td>${escapeHtml(s.group_name)}</td>
+                    <td>${escapeHtml(s.created_at) || '—'}</td>
                     <td>
-                      <button class="btn btn--danger btn-sm" onclick="deleteStudent(${s.id}, '${s.full_name}')">Удалить</button>
+                      <button class="btn btn--danger btn-sm" onclick="deleteStudent(${s.id}, '${escapeJs(s.full_name)}')">Удалить</button>
                     </td>
                   </tr>
                 `).join('')}
@@ -584,8 +626,8 @@
           html += `
             <div class="menu-item-row">
               <div class="menu-item-row__info">
-                <span class="menu-item-row__emoji">${d.emoji || '🍽️'}</span>
-                <span>${d.name}</span>
+                <span class="menu-item-row__emoji">${escapeHtml(d.emoji) || '🍽️'}</span>
+                <span>${escapeHtml(d.name)}</span>
                 <span class="badge ${d.is_active ? 'badge--success' : 'badge--warning'}">
                   ${d.is_active ? 'Активно' : 'Скрыто'}
                 </span>
@@ -595,7 +637,7 @@
                   onclick="toggleMenuItem(${d.id}, ${d.is_active})">
                   ${d.is_active ? 'Скрыть' : 'Показать'}
                 </button>
-                <button class="btn btn--danger btn-sm" onclick="deleteMenuItem(${d.id}, '${d.name}')">✕</button>
+                <button class="btn btn--danger btn-sm" onclick="deleteMenuItem(${d.id}, '${escapeJs(d.name)}')">✕</button>
               </div>
             </div>
           `;
@@ -606,8 +648,8 @@
           html += `
             <div class="menu-item-row">
               <div class="menu-item-row__info">
-                <span class="menu-item-row__emoji">${d.emoji || '🥤'}</span>
-                <span>${d.name}</span>
+                <span class="menu-item-row__emoji">${escapeHtml(d.emoji) || '🥤'}</span>
+                <span>${escapeHtml(d.name)}</span>
                 <span class="badge ${d.is_active ? 'badge--success' : 'badge--warning'}">
                   ${d.is_active ? 'Активно' : 'Скрыто'}
                 </span>
@@ -617,7 +659,7 @@
                   onclick="toggleMenuItem(${d.id}, ${d.is_active})">
                   ${d.is_active ? 'Скрыть' : 'Показать'}
                 </button>
-                <button class="btn btn--danger btn-sm" onclick="deleteMenuItem(${d.id}, '${d.name}')">✕</button>
+                <button class="btn btn--danger btn-sm" onclick="deleteMenuItem(${d.id}, '${escapeJs(d.name)}')">✕</button>
               </div>
             </div>
           `;

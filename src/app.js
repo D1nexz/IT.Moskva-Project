@@ -28,12 +28,6 @@ const generalLimiter = rateLimit({
   message: { error: 'Слишком много запросов, попробуйте позже' }
 });
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: { error: 'Слишком много попыток входа, попробуйте позже' }
-});
-
 app.use(generalLimiter);
 
 // ========== Парсинг тела запроса ==========
@@ -64,9 +58,12 @@ app.use(session({
 const studentsRouter = require('../routes/students');
 const adminRouter = require('../routes/admin');
 
-app.use('/api/students', authLimiter, studentsRouter);
-app.use('/api', studentsRouter);
+// ПРИМЕЧАНИЕ: порядок важен — /api/admin должен монтироваться РАНЬШЕ общего /api,
+// иначе studentRouter перехватит все /api/admin/* запросы (у studentRouter нет
+// маршрута для /api/admin, и он не вызовет next(), вернув 404 HTML/JSON).
 app.use('/api/admin', adminRouter);
+app.use('/api/students', studentsRouter);
+app.use('/api', studentsRouter);
 
 // ========== Страницы ==========
 
