@@ -30,54 +30,43 @@
     <div class="container" id="app">
       <!-- Секция авторизации (регистрация / вход) -->
       <section class="view" id="viewAuth">
-        <div class="auth-card">
-          <div class="auth-card__header">
-            <div class="auth-card__icon">🎓</div>
-            <h1>IT.Москва</h1>
-            <p class="auth-card__subtitle">Голосование за обед</p>
+        <div class="auth-shell">
+          <div class="auth-hero">
+            <div class="auth-hero__badge">🍽️</div>
+            <h1 class="auth-hero__title">IT.Москва</h1>
+            <p class="auth-hero__subtitle">Голосование за обед — выбери, что будем есть завтра</p>
+            <div class="auth-hero__points">
+              <span class="auth-hero__point">🗳️ Один голос в день</span>
+              <span class="auth-hero__point">📊 Результаты в реальном времени</span>
+              <span class="auth-hero__point">🍔 Большой выбор блюд</span>
+            </div>
           </div>
 
-          <!-- Табы: Вход / Регистрация -->
-          <div class="auth-tabs">
-            <button class="auth-tabs__btn auth-tabs__btn--active" data-tab="login">Вход</button>
-            <button class="auth-tabs__btn" data-tab="register">Регистрация</button>
+          <div class="auth-card">
+            <div class="auth-card__header">
+              <div class="auth-card__icon">👋</div>
+              <h1>Привет!</h1>
+              <p class="auth-card__subtitle">Введите свои данные и проголосуйте</p>
+            </div>
+
+            <!-- Единая форма входа (без регистрации) -->
+            <form id="loginForm">
+              <div class="form-group">
+                <label for="loginName">👤 ФИО</label>
+                <input type="text" id="loginName" name="full_name"
+                       placeholder="Иванов Иван или Иванов И.И." required autocomplete="name">
+                <span class="form-hint">Фамилия и имя (можно с инициалами)</span>
+              </div>
+              <div class="form-group">
+                <label for="loginGroup">🏫 Группа</label>
+                <input type="text" id="loginGroup" name="group_name"
+                       placeholder="1ИИ-4-26" required autocomplete="organization">
+                <span class="form-hint">Например: 1ИИ-4-26, 1ИИ-1-26, ИС-21</span>
+              </div>
+              <button type="submit" class="btn btn--primary btn--full">Войти и проголосовать</button>
+              <p class="auth-form__error" id="loginError"></p>
+            </form>
           </div>
-
-          <!-- Форма входа -->
-          <form class="auth-form auth-form--active" id="loginForm">
-            <div class="form-group">
-              <label for="loginName">ФИО</label>
-              <input type="text" id="loginName" name="full_name"
-                     placeholder="Иванов Иван Иванович" required autocomplete="name">
-              <span class="form-hint">Только кириллица, минимум 2 слова</span>
-            </div>
-            <div class="form-group">
-              <label for="loginGroup">Группа</label>
-              <input type="text" id="loginGroup" name="group_name"
-                     placeholder="1ИИ-4-26" required autocomplete="organization">
-              <span class="form-hint">Например: 1ИИ-4-26, ИС-21</span>
-            </div>
-            <button type="submit" class="btn btn--primary btn--full">Войти</button>
-            <p class="auth-form__error" id="loginError"></p>
-          </form>
-
-          <!-- Форма регистрации -->
-          <form class="auth-form" id="registerForm">
-            <div class="form-group">
-              <label for="regName">ФИО</label>
-              <input type="text" id="regName" name="full_name"
-                     placeholder="Иванов Иван Иванович" required autocomplete="name">
-              <span class="form-hint">Только кириллица, минимум 2 слова</span>
-            </div>
-            <div class="form-group">
-              <label for="regGroup">Группа</label>
-              <input type="text" id="regGroup" name="group_name"
-                     placeholder="1ИИ-4-26" required autocomplete="organization">
-              <span class="form-hint">Например: 1ИИ-4-26, ИС-21</span>
-            </div>
-            <button type="submit" class="btn btn--primary btn--full">Зарегистрироваться</button>
-            <p class="auth-form__error" id="registerError"></p>
-          </form>
         </div>
       </section>
 

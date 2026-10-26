@@ -7,10 +7,10 @@ const router = express.Router();
 const { dbRun, dbGet, dbQuery } = require('../src/utils/dbHelpers');
 const { checkVotingTime } = require('../middleware/votingTime');
 
-// Кириллица, пробелы, дефисы, минимум 2 слова
-const FULL_NAME_REGEX = /^[А-ЯЁ][а-яё]+[-]?[а-яё]*\s[А-ЯЁ][а-яё]+(\s[А-ЯЁ][а-яё]+)?$/;
+// ФИО: фамилия + имя/инициалы (кириллица), например: Иванов Иван, Иванов И.И., Иванов Иван Иванович
+const FULL_NAME_REGEX = /^[А-ЯЁ][а-яё]+(?:\s+(?:[А-ЯЁ][а-яё]+|(?:[А-ЯЁ]\.)+)){1,2}$/;
 
-// Формат группы: например 1ИИ-4-26, 2ПО-3-25, ИС-21
+// Формат группы: например 1ИИ-4-26, 1ИИ-1-26, 1ИИ-2-26, ИС-21
 const GROUP_REGEX = /^(\d[А-ЯЁ]{2,4}-\d(-\d{1,2})?|[А-ЯЁ]{2,4}-\d{2})$/;
 
 /**
@@ -92,13 +92,35 @@ router.post('/login', async (req, res) => {
     const trimmedName = full_name.trim().replace(/\s+/g, ' ');
     const trimmedGroup = group_name.trim().toUpperCase();
 
-    const student = await dbGet(
+    // Валидация: ФИО (можно с инициалами) и группа
+    if (!FULL_NAME_REGEX.test(trimmedName)) {
+      return res.status(400).json({
+        error: 'Введите фамилию и имя (например: Иванов Иван или Иванов И.И.)'
+      });
+    }
+
+    if (!GROUP_REGEX.test(trimmedGroup)) {
+      return res.status(400).json({
+        error: 'Группа должна быть в формате: 1ИИ-4-26 или ИС-21'
+      });
+    }
+
+    let student = await dbGet(
       'SELECT id, full_name, group_name FROM students WHERE full_name = ? AND group_name = ?',
       [trimmedName, trimmedGroup]
     );
 
+    // Регистрация не нужна: если студента нет — создаём автоматически
     if (!student) {
-      return res.status(404).json({ error: 'Студент не найден. Проверьте ФИО и группу.' });
+      const result = await dbRun(
+        'INSERT INTO students (full_name, group_name) VALUES (?, ?)',
+        [trimmedName, trimmedGroup]
+      );
+      student = {
+        id: result.lastID,
+        full_name: trimmedName,
+        group_name: trimmedGroup
+      };
     }
 
     // Создаём сессию

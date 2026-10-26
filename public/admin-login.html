@@ -13,15 +13,32 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      background: linear-gradient(135deg, #eef2ff, #f0e7ff);
+      background:
+        radial-gradient(circle at 15% 20%, rgba(124, 58, 237, 0.14), transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(79, 70, 229, 0.14), transparent 45%),
+        linear-gradient(160deg, #eef2ff 0%, #f5f3ff 50%, #ede9fe 100%);
     }
     .admin-login__card {
       width: 100%;
       max-width: 400px;
       background: var(--color-white);
-      border-radius: var(--radius-lg);
-      padding: 40px 32px;
-      box-shadow: 0 8px 32px rgba(79, 70, 229, 0.12);
+      border-radius: 24px;
+      padding: 40px 36px;
+      box-shadow: 0 24px 60px rgba(79, 70, 229, 0.16);
+      animation: fadeIn 0.4s ease;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+    .admin-login__badge {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 14px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
     }
     .admin-login__header {
       text-align: center;
@@ -31,6 +48,10 @@
       font-size: 1.5rem;
       font-weight: 700;
       margin-bottom: 4px;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     .admin-login__header p {
       color: var(--color-text-secondary);
@@ -43,6 +64,7 @@
       color: var(--color-primary);
       text-decoration: none;
       font-size: 0.875rem;
+      font-weight: 500;
     }
     .admin-login__back:hover {
       text-decoration: underline;
@@ -53,7 +75,7 @@
   <div class="admin-login">
     <div class="admin-login__card">
       <div class="admin-login__header">
-        <div style="font-size:2.5rem;margin-bottom:8px;">🔐</div>
+        <div class="admin-login__badge">🔐</div>
         <h1>Вход для администратора</h1>
         <p>IT.Москва — Голосование за обед</p>
       </div>
@@ -89,7 +111,18 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
-        const data = await res.json();
+
+        if (!(res.headers.get('content-type') || '').includes('application/json')) {
+          throw new Error('Сервер недоступен (нет API). Запустите Node.js-сервер.');
+        }
+
+        let data;
+        try {
+          data = await res.json();
+        } catch (e) {
+          throw new Error('Сервер вернул некорректный ответ');
+        }
+
         if (!res.ok) throw new Error(data.error || 'Ошибка входа');
         window.location.href = '/admin';
       } catch (err) {
